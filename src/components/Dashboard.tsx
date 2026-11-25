@@ -29,6 +29,43 @@ import type {
 
 const TOKEN_KEY = "gh-stat:token";
 
+function readStoredToken(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem(TOKEN_KEY)?.trim() ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Token 永久保存在本机，只有一个键、同一时间只有一个值生效；
+ * 只有手动提交新值或「清除」才会改变，不做任何时间上的过期处理。
+ * localStorage 不可用（隐私模式等）时仅本次会话有效。
+ */
+function writeStoredToken(value: string): void {
+  const next = value.trim();
+  try {
+    const prev = window.localStorage.getItem(TOKEN_KEY) ?? "";
+    if (next === prev) return;
+    if (next) {
+      window.localStorage.setItem(TOKEN_KEY, next);
+    } else {
+      window.localStorage.removeItem(TOKEN_KEY);
+    }
+  } catch {
+    // 写入失败时保留在内存中，不影响本次会话使用
+  }
+}
+
+function clearStoredToken(): void {
+  try {
+    window.localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // 忽略
+  }
+}
+
 type ModeData = Partial<Record<RepoMode, ReposResponse>>;
 
 function repoField(repo: Repo, key: RepoSortKey): string | number {
@@ -166,18 +203,19 @@ export default function Dashboard() {
         try {
           body = await run(activeToken);
         } catch (firstError) {
-          // Token 失效但填了用户名时，自动回退到匿名公开查询并清除坏 Token
+          // Token 失效但填了用户名时，自动回退到匿名公开查询；
+          // Token 本身不做自动删除，保留到用户手动替换或「清除」。
           if (
             firstError instanceof GithubApiError &&
             firstError.status === 401 &&
             activeToken &&
             activeUser
           ) {
-            window.localStorage.removeItem(TOKEN_KEY);
-            setToken("");
             effectiveToken = "";
             body = await run("");
-            setNotice("已保存的 Token 无效，已自动改用公开数据，并清除该 Token。");
+            setNotice(
+              "已保存的 Token 无效或已过期，已自动改用公开数据；Token 未删除，请手动替换后再读取私有仓库。",
+            );
           } else {
             throw firstError;
           }
@@ -215,7 +253,7 @@ export default function Dashboard() {
     if (didInit.current) return;
     didInit.current = true;
 
-    const savedToken = window.localStorage.getItem(TOKEN_KEY) ?? "";
+    const savedToken = readStoredToken();
     const savedUser = readCachedUsername();
     setToken(savedToken);
     setUsername(savedUser);
@@ -291,7 +329,8 @@ export default function Dashboard() {
       setError("用户名格式不正确，请填写 GitHub 用户名");
       return;
     }
-    window.localStorage.setItem(TOKEN_KEY, token.trim());
+    // 提交即覆盖已保存的 Token，保证始终只有一个 Token 生效
+    writeStoredToken(token);
     // 提交时立即记录用户名，避免请求失败或页面重载后输入框变成空
     cacheUsername(normalizedUser);
     setUsername(normalizedUser);
@@ -305,7 +344,7 @@ export default function Dashboard() {
   }
 
   function handleClear() {
-    window.localStorage.removeItem(TOKEN_KEY);
+    clearStoredToken();
     clearCachedUsername();
     setToken("");
     setUsername("");
