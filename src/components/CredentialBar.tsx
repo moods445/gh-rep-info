@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { getDataSource } from "@/lib/reposClient";
 import { listCachedUsernames } from "@/lib/usernameCache";
 
 interface Props {
@@ -25,7 +24,6 @@ export default function CredentialBar({
   onSubmit,
   onClear,
 }: Props) {
-  const source = getDataSource();
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -108,9 +106,7 @@ export default function CredentialBar({
         </button>
       </div>
       <p className="credential-hint">
-        {source === "direct"
-          ? "当前为静态模式：浏览器直接请求 GitHub，Token 仅保存在本机浏览器。"
-          : "当前为代理模式：请求由本机服务端转发至 GitHub。"}
+        当前为纯静态站点：浏览器直接请求 GitHub，Token 仅保存在本机浏览器。
         查询对象始终是填入的用户名：带 Token 只提升配额，且仅当用户名与 Token 主人一致时才包含私有仓库。
         查询结果（含带 Token 的私有数据）会按用户名缓存 1 天，请勿在共用电脑使用；可用「删除缓存」清除。
         最近使用的用户名缓存 30 天，点击用户名输入框可快速填入；未填写 Token 时受 GitHub 每小时 60 次请求限制。

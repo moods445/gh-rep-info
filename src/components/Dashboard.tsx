@@ -9,9 +9,8 @@ import TagPanel from "@/components/TagPanel";
 import ThemeToggle from "@/components/ThemeToggle";
 import TocNav from "@/components/TocNav";
 import { csvEscape, formatDate } from "@/lib/format";
-import { GithubApiError } from "@/lib/github";
+import { fetchRepos, GithubApiError } from "@/lib/github";
 import { normalizeUsername } from "@/lib/githubUsername";
-import { loadRepos } from "@/lib/reposClient";
 import { clearRepoCache, readRepoCache, writeRepoCache } from "@/lib/repoCache";
 import { searchRepos } from "@/lib/search";
 import { filterByTag } from "@/lib/tags";
@@ -156,7 +155,7 @@ export default function Dashboard() {
       });
 
       const run = (withToken: string) =>
-        loadRepos({
+        fetchRepos({
           mode: target,
           username: activeUser || undefined,
           token: withToken || undefined,
@@ -200,7 +199,7 @@ export default function Dashboard() {
       } catch (err) {
         const message =
           err instanceof TypeError
-            ? "无法连接本机服务或 GitHub，请检查网络/代理设置后重试"
+            ? "无法连接 GitHub，请检查网络或代理设置后重试"
             : err instanceof Error
               ? err.message
               : "请求 GitHub 数据失败";

@@ -4,11 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:proxy": "NEXT_PUBLIC_API_MODE=proxy next dev",
     "build": "next build",
-    "build:static": "node scripts/build-static.mjs",
-    "build:proxy": "NEXT_PUBLIC_API_MODE=proxy next build",
-    "start": "next start",
+    "preview": "npx --yes serve out",
     "lint": "next lint"
   },
   "dependencies": {
